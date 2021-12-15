@@ -2,3 +2,7 @@ name = "CellLists"
 uuid = "2ffa285a-58e2-449f-8cf4-f8e6add11ab8"
 authors = ["Bon Leif Amalla <bonleifamalla@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
