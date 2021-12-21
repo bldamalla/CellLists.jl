@@ -33,7 +33,7 @@ struct GuardedBinDict{N} <: BinDict
     bins::Dict{NTuple{N,Int},Vector{Int}}
     cutoff::T where T <: Number
     dims::NTuple{N,Int}
-    guard::SVector{N,T} where T <: Number
+    guard::SVector{N,T}
 end
 
 # TODO: something about the constructors of each
@@ -50,6 +50,7 @@ function createbindict(pos::AbstractVector{StaticVector{N}}, cutoff;
     ## get a temp grid size and create bins that way
     if base isa Nothing
         # get bounding box from the given input
+        base = getboundbox(pos)
     end
     @assert base isa BoundBox "base should be a BoundBox"
 
@@ -65,8 +66,15 @@ function createbindict(pos::AbstractVector{StaticVector{N}}, cutoff;
 
     if guard isa Nothing
         # create an unguarded dict
+        return UnguardedBinDict{N}(bdict, cutoff, dims)
     else
         # create a guarded dict
+        return GuardedBinDict{N}(bdict, cutoff, dims, guard)
     end
 end
 
+function getboundbox(pos::AbstractVector{StaticVector{N}}) where N
+    _mins = @SVector [minimum(p[n] for p in pos) for n in 1:N]
+    _maxs = @SVector [maximum(p[n] for p in pos) for n in 1:N]
+    return BoundBox(_mins, _maxs)
+end
