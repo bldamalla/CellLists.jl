@@ -3,6 +3,6 @@ module CellLists
 using Distances
 using StaticArrays
 
-greet() = print("Hello World!")
+include("structs.jl")
 
 end # module

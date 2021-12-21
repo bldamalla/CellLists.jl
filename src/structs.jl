@@ -17,9 +17,9 @@ Base.size(bbox::BoundBox) = bbox.stop .- bbox.start
 An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 Use this when there are no periodic boundary conditions to be followed.
 """
-struct UnguardedBinDict{N} <: BinDict
+struct UnguardedBinDict{N,T} <: BinDict
     bins::Dict{NTuple{N,Int},Vector{Int}}
-    cutoff::T where T <: Number
+    cutoff::T
     dims::NTuple{N,Int}
 end
 
@@ -29,9 +29,9 @@ end
 An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 This follows periodic boundary conditions as prescribed by a `guard` box.
 """
-struct GuardedBinDict{N} <: BinDict
+struct GuardedBinDict{N,T} <: BinDict
     bins::Dict{NTuple{N,Int},Vector{Int}}
-    cutoff::T where T <: Number
+    cutoff::T
     dims::NTuple{N,Int}
     guard::SVector{N,T}
 end
@@ -74,7 +74,8 @@ function createbindict(pos::AbstractVector{StaticVector{N}}, cutoff;
 end
 
 function getboundbox(pos::AbstractVector{StaticVector{N}}) where N
-    _mins = @SVector [minimum(p[n] for p in pos) for n in 1:N]
-    _maxs = @SVector [maximum(p[n] for p in pos) for n in 1:N]
+    T = eltype(eltype(pos))
+    _mins = SVector{N,T}(minimum(p[n] for p in pos) for n in 1:m)
+    _maxs = SVector{N,T}(maximum(p[n] for p in pos) for n in 1:m)
     return BoundBox(_mins, _maxs)
 end
