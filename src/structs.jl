@@ -3,7 +3,7 @@
 ## the primary structure I'll need is a set of bins arranged in a rectangular
 ## array.
 
-abstract type BinDict end
+abstract type BinDict{N} end
 
 struct BoundBox{N,T}
     start::SVector{N,T}
@@ -12,12 +12,12 @@ end
 Base.size(bbox::BoundBox) = bbox.stop .- bbox.start
 
 """
-    UnguardedBinDict{N}
+    UnguardedBinDict{N,T}
 
 An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 Use this when there are no periodic boundary conditions to be followed.
 """
-struct UnguardedBinDict{N,T} <: BinDict
+struct UnguardedBinDict{N,T} <: BinDict{N}
     bins::Dict{NTuple{N,Int},Vector{Int}}
     cutoff::T
     dims::NTuple{N,Int}
@@ -29,7 +29,7 @@ end
 An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 This follows periodic boundary conditions as prescribed by a `guard` box.
 """
-struct GuardedBinDict{N,T} <: BinDict
+struct GuardedBinDict{N,T} <: BinDict{N}
     bins::Dict{NTuple{N,Int},Vector{Int}}
     cutoff::T
     dims::NTuple{N,Int}
@@ -44,19 +44,15 @@ end
 ## use the abstract type StaticVector{N} where N
 
 function createbindict(pos::AbstractVector{StaticVector{N}}, cutoff;
-                       base=nothing, guard=nothing) where N
+                       base=getboundbox(pos), guard=nothing) where N
     ## TODO: get the maximum and minimum position
     ## enclose this in a structure?
     ## get a temp grid size and create bins that way
-    if base isa Nothing
-        # get bounding box from the given input
-        base = getboundbox(pos)
-    end
     @assert base isa BoundBox "base should be a BoundBox"
 
     # from now get the grid
     sz = size(base)
-    dims = sz ./ cutoff
+    dims = ceil.(Int, sz ./ cutoff)
 
     # TODO: based on the grid dimensions create binning dictionary
     bdict = Dict{NTuple{N,Int},Vector{Int}}()
@@ -75,7 +71,10 @@ end
 
 function getboundbox(pos::AbstractVector{StaticVector{N}}) where N
     T = eltype(eltype(pos))
-    _mins = SVector{N,T}(minimum(p[n] for p in pos) for n in 1:m)
-    _maxs = SVector{N,T}(maximum(p[n] for p in pos) for n in 1:m)
+    _mins = SVector{N,T}(minimum(p[n] for p in pos) for n in 1:N)
+    _maxs = SVector{N,T}(maximum(p[n] for p in pos) for n in 1:N)
     return BoundBox(_mins, _maxs)
 end
+
+## define a getindex for the bounding boxes using Cartesian indices
+getindex(bdict::BinDict{N}, idx::CartesianIndices{N}) where N = bdict.bins[idx.I]
