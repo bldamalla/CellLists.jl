@@ -78,3 +78,35 @@ end
 
 ## define a getindex for the bounding boxes using Cartesian indices
 getindex(bdict::BinDict{N}, idx::CartesianIndices{N}) where N = bdict.bins[idx.I]
+
+#### ADJACENCY LISTS ###########
+
+"""
+    CompressedAdjacencyList
+
+Represents an iterable adjacency list. Contains information on the number of
+neighbors of each element and their respective neighbors.
+"""
+struct CompressedAdjacencyList
+    valences::Vector{Int}
+    neighbors::Vector{Int}
+
+    function CompressedAdjacencyList(valences, neighbors)
+        @assert sum(valences) == length(neighbors)
+        return new(valences, neighbors)
+    end
+end
+
+# state can act like the indices of a matrix, the first is a placeholder
+# for a total number of elements that have been passed
+# the second element is the index of
+# the current indexed element and the second is the nth neighbor
+function Base.iterate(cal::CompressedAdjacencyList, state=(0,1,1))
+    s, a, b = state
+    s == length(cal.neighbors) && return nothing
+
+    a_ = b == cal.valences[a] ? a+1 : a
+    b_ = b == cal.valences[a] ? 1 : b+1
+
+    return (a, cal.neighbors[s+1]), (s+1, a_, b_)
+end
