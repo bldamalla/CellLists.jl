@@ -18,9 +18,8 @@ An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 Use this when there are no periodic boundary conditions to be followed.
 """
 struct UnguardedBinDict{N,T} <: BinDict{N}
-    bins::Dict{NTuple{N,Int},Vector{Int}}
+    bins::Array{Vector{Int},N}
     cutoff::T
-    dims::NTuple{N,Int}
 end
 
 """
@@ -30,11 +29,12 @@ An ``N``-dimensional binning dictionary for making cell-based neighbor lists.
 This follows periodic boundary conditions as prescribed by a `guard` box.
 """
 struct GuardedBinDict{N,T} <: BinDict{N}
-    bins::Dict{NTuple{N,Int},Vector{Int}}
+    bins::Array{Vector{Int},N}
     cutoff::T
-    dims::NTuple{N,Int}
     guard::SVector{N,T}
 end
+
+Base.size(bdict::BinDict) = size(bdict.bins)
 
 # TODO: something about the constructors of each
 ## you can have a base box if it is provided, but if it is not you can
@@ -55,17 +55,14 @@ function createbindict(pos::AbstractVector{StaticVector{N}}, cutoff;
     dims = ceil.(Int, sz ./ cutoff)
 
     # TODO: based on the grid dimensions create binning dictionary
-    bdict = Dict{NTuple{N,Int},Vector{Int}}()
-    for index in CartesianIndices(dims)
-        bdict[index.I] = Vector{Int}()
-    end
+    bdict = [Int[] for _ in CartesianIndices(dims)]
 
     if guard isa Nothing
         # create an unguarded dict
-        return UnguardedBinDict{N}(bdict, cutoff, dims)
+        return UnguardedBinDict{N}(bdict, cutoff)
     else
         # create a guarded dict
-        return GuardedBinDict{N}(bdict, cutoff, dims, guard)
+        return GuardedBinDict{N}(bdict, cutoff, guard)
     end
 end
 
@@ -77,7 +74,7 @@ function getboundbox(pos::AbstractVector{StaticVector{N}}) where N
 end
 
 ## define a getindex for the bounding boxes using Cartesian indices
-getindex(bdict::BinDict{N}, idx::CartesianIndices{N}) where N = bdict.bins[idx.I]
+getindex(bdict::BinDict{N}, idx) where N = bdict.bins[idx]
 
 #### ADJACENCY LISTS ###########
 

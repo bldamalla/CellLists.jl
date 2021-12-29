@@ -10,20 +10,20 @@ function fillbins!(bdict::BinDict{N},
     # first is to check if bounding box of current positions
     # is applicable with current bdict
     cutoff = bdict.cutoff
-    @assert bdict.dims == ceil.(Int, size(base) ./ cutoff)
+    @assert size(bdict) == ceil.(Int, size(base) ./ cutoff)
 
     # next is iterate over the whole array and put in each bin
     @inbounds for idx in eachindex(pos)
         cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
-        push!(bdict.bins[cell], idx)
+        push!(bdict[cell], idx)
     end
 
     return bdict
 end
 
 function emptybins!(bdict::BinDict)
-    for key in keys(bdict.bins)
-       empty!(bdict.bins[key])
+    for index in eachindex(bdict.bins)
+       empty!(bdict.bins[index])
     end
     return bdict
 end
