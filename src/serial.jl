@@ -28,12 +28,21 @@ function emptybins!(bdict::BinDict)
     return bdict
 end
 
-function getbin(pos::StaticVector{N,T},
-                base::BoundBox{N,T},
-                cutoff::T;
-                skipcheck=false) where {N,T}
-    offset = pos .- base.start
-    sz = size(base)
-    skipcheck || @assert all(offset[i] < sz[i], 1:N)
-    return ceil.(Int, offset ./ cutoff)
+function neighborcache(bdict::UnguardedBinDict, sort=false)
+    sz = size(bdict); cidcs = CartesianIndices(sz)
+    cache = [Int[] for _ in cidcs]
+
+    for idx in cidcs
+        prbset = locflag(idx.I, sz) |> probeset
+        for probe in prbset
+            inc = probe.I .+ idx.I
+            push!(cache[idx], bdict[inc]...)
+        end
+    end
+
+    if sort # sort inplace --- is there a better way to do this?
+        map!(sort!, cache, cache)
+    end
+
+    return cache, length.(cache)
 end
