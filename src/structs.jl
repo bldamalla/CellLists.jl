@@ -35,6 +35,7 @@ struct GuardedBinDict{N,T} <: BinDict{N}
 end
 
 Base.size(bdict::BinDict) = size(bdict.bins)
+Base.ndims(::BinDict{N}) where N = N
 
 # TODO: something about the constructors of each
 ## you can have a base box if it is provided, but if it is not you can
