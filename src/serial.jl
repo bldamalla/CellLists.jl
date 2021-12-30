@@ -30,19 +30,15 @@ end
 
 function neighborcache(bdict::UnguardedBinDict, sort=false)
     sz = size(bdict); cidcs = CartesianIndices(sz)
-    cache = [Int[] for _ in cidcs]
 
-    for idx in cidcs
+    cache = map(cidcs) do idx
         prbset = locflag(idx.I, sz) |> probeset
-        for probe in prbset
-            inc = probe.I .+ idx.I
-            push!(cache[idx], bdict[inc]...)
-        end
+        vcat([bdict[CartesianIndex(prb.I .+ idx.I)] for prb in prbset]...)
     end
 
     if sort # sort inplace --- is there a better way to do this?
         map!(sort!, cache, cache)
     end
 
-    return cache, length.(cache)
+    return cache
 end
