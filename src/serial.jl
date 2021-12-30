@@ -42,3 +42,21 @@ function neighborcache(bdict::UnguardedBinDict, sort=false)
 
     return cache
 end
+
+function neighborcache(bdict::GuardedBinDict, sort=false)
+    sz = size(bdict); cidcs = CartesianIndices(sz)
+
+    around = let nones = ntuple(_->1, ndims(bdict))
+        CartesianIndices(nones .* 3) .- CartesianIndex(nones .* 2)
+    end
+
+    cache = map(cidcs) do idx
+        vcat([bdict[wrapprobe(prb.I .+ idx.I, sz)] for prb in around]...)
+    end
+
+    if sort # sort inplace --- is there a better way to do this?
+        map!(sort!, cache, cache)
+    end
+    
+    return cache
+end

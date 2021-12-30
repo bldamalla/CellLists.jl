@@ -7,7 +7,7 @@
     offset = pos .- base.start
     sz = size(base)
     skipcheck || @assert all(offset[i] <= sz[i], 1:N)
-    return ceil.(Int, offset ./ cutoff)
+    return ceil.(Int, offset ./ cutoff) |> CartesianIndex
 end
 
 @inline function locflag(o::NTuple{N}, ref::NTuple{N}) where N
@@ -20,4 +20,10 @@ end
     ntuple(N) do i
         o[i] == -1 ? (0:1) : o[i] == 1 ? (-1:0) : (-1:1)
     end |> CartesianIndices
+end
+
+@inline function wrapprobe(o::NTuple{N}, ref::NTuple{N}) where N
+    ntuple(N) do i
+        o[i] == 0 ? 1 : o[i] == ref[i]+1 ? 1 : o[i]
+    end |> CartesianIndex
 end
