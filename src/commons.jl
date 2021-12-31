@@ -27,3 +27,68 @@ end
         o[i] == 0 ? 1 : o[i] == ref[i]+1 ? 1 : o[i]
     end |> CartesianIndex
 end
+
+### THREADED MAP
+
+"""
+    tmap(f, src...; basesize, nt)
+
+Threaded version of `map`. For use with relatively expensive `f`.
+The function is allocating tasks for each collection element.
+
+Keyword Arguments
+===
++ `basesize`: length of array for when to fall back to serial. Choice
+can depend on the load of `f`. Defaults to ``10000``.
++ `nt`: number of threads to be used. Defaults to `Threads.nthreads()`.
+"""
+function tmap(f, src...; basesize=10_000, nt=Threads.nthreads())
+    ## if source is not large enough compared to basesize
+    ## fall back to serial map
+    length(src) < basesize && return map(f, src...)
+
+    sem = Base.Semaphore(nt)
+    return map(src...) do (x...)
+        # set up tasks for each computation
+        # basesize should depend on how heavy f is
+        @async begin
+            Base.acquire(sem)
+            __t = Threads.@spawn f(x...)
+            res = fetch(__t)
+            Base.release(sem)
+            return res
+        end
+    end .|> fetch
+end
+
+"""
+    tmap!(f, dst, src...; basesize, nt)
+
+Threaded version of `map!`. For use with relatively expensive `f` and
+when `dst` can be provided (type is known upon compilation).
+
+Keyword Arguments
+===
++ `basesize`: length of array for when to fall back to serial. Choice
+can depend on the load of `f`. Defaults to ``10000``.
++ `nt`: number of threads to be used. Defaults to `Threads.nthreads()`.
+
+See also: [tmap][@ref]
+"""
+function tmap!(f, dst, src...; basesize=10_000, nt=Threads.nthreads())
+    ## if source is not large enough compared to basesize
+    ## fall back to serial map!
+    length(dst) < basesize && return map!(f, dst, src...)
+
+    sem = Base.Semaphore(nt)
+
+    map!(dst, src...) do (x...)
+        @async begin
+            Base.acquire(sem)
+            __t = Threads.@spawn f(x...)
+            res = fetch(__t)
+            Base.release(sem)
+            return res
+        end |> fetch
+    end
+end ## mostly untested so far; not safe
