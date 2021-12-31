@@ -28,12 +28,34 @@ function emptybins!(bdict::BinDict)
     return bdict
 end
 
+function CompressedAdjacencyList(pos::AbstractArray{StaticVector{N}},
+                                 bdict,
+                                 base=getboundbox(pos);
+                                 sort=false, skipcheck=false)
+    ## get cache
+    ## map and then reduce with vcat
+    ncache = neighborcache(bdict, sort)
+    szqn = bdict isa GuardedBinDict ? bdict.guard : size(base)
+    cutoff = bdict.cutoff
+
+    tp = @inbounds map(eachindex(pos)) do idx
+        cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
+        filter(ncache[cell]) do q
+            peuclidean(pos[q], pos[idx], szqn) < cutoff
+        end
+    end
+
+    return CompressedAdjacencyList(length.(tp), reduce(vcat, tp))
+end
+
 function neighborcache(bdict::UnguardedBinDict, sort=false)
     sz = size(bdict); cidcs = CartesianIndices(sz)
 
     cache = map(cidcs) do idx
         prbset = locflag(idx.I, sz) |> probeset
-        vcat([bdict[CartesianIndex(prb.I .+ idx.I)] for prb in prbset]...)
+        map(prbset) do probe
+            bdict[CartesianIndex(probe.I .+ idx.I)]
+        end |> q->vcat(q...)
     end
 
     if sort # sort inplace --- is there a better way to do this?
@@ -51,7 +73,9 @@ function neighborcache(bdict::GuardedBinDict, sort=false)
     end
 
     cache = map(cidcs) do idx
-        vcat([bdict[wrapprobe(prb.I .+ idx.I, sz)] for prb in around]...)
+        map(around) do probe
+            bdict[wrapprobe(probe.I .+ idx.I, sz)]
+        end |> q->vcat(q...)
     end
 
     if sort # sort inplace --- is there a better way to do this?
