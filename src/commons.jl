@@ -7,7 +7,7 @@
     offset = pos .- base.start
     sz = size(base)
     skipcheck || @assert all(offset[i] <= sz[i], 1:N)
-    return ceil.(Int, offset ./ cutoff) |> CartesianIndex
+    return ceil.(Int, offset ./ cutoff).data |> CartesianIndex
 end
 
 @inline function locflag(o::NTuple{N}, ref::NTuple{N}) where N
@@ -31,34 +31,42 @@ end
 ### THREADED MAP
 
 """
-    tmap(f, src...; basesize, nt)
+    tmap(f, src, shaped=false; basesize, nt)
 
 Threaded version of `map`. For use with relatively expensive `f`.
-The function is allocating tasks for each collection element.
+The function is allocating tasks per available thread.
 
-Keyword Arguments
-===
+# Keyword Arguments
 + `basesize`: length of array for when to fall back to serial. Choice
 can depend on the load of `f`. Defaults to ``10000``.
 + `nt`: number of threads to be used. Defaults to `Threads.nthreads()`.
 """
-function tmap(f, src...; basesize=10_000, nt=Threads.nthreads())
-    ## if source is not large enough compared to basesize
-    ## fall back to serial map
-    length(src) < basesize && return map(f, src...)
+function tmap(f, src, shaped=false; basesize=10_000, nt=Threads.nthreads())
+    len = length(src)
+    len < basesize && return map(f, src)
+    sz = size(src)
+    idcs = eachindex(src)
 
-    sem = Base.Semaphore(nt)
-    return map(src...) do (x...)
-        # set up tasks for each computation
-        # basesize should depend on how heavy f is
-        @async begin
-            Base.acquire(sem)
-            __t = Threads.@spawn f(x...)
-            res = fetch(__t)
-            Base.release(sem)
-            return res
+    tasks = map(1:nt) do tid
+        ulen, rem = divrem(len, nt)
+        # divide evenly and then dump into one by one
+        fst = ulen * (tid-1) + first(idcs)
+        lst = fst + ulen - 1
+        if rem > 0
+            if tid < rem
+                fst += tid-1    # from dumping
+                lst += tid      # from dumping
+            else
+                fst += rem      # from dumping
+                lst += rem      # from dumping
+            end
         end
-    end .|> fetch
+        Threads.@spawn map(f, view(src, fst:lst))
+    end
+
+    unshaped = fetch.(tasks) |> q->vcat(q...)
+    shaped && return reshape(unshaped, sz)
+    return unshaped
 end
 
 """
@@ -67,28 +75,20 @@ end
 Threaded version of `map!`. For use with relatively expensive `f` and
 when `dst` can be provided (type is known upon compilation).
 
-Keyword Arguments
-===
+# Keyword Arguments
 + `basesize`: length of array for when to fall back to serial. Choice
 can depend on the load of `f`. Defaults to ``10000``.
 + `nt`: number of threads to be used. Defaults to `Threads.nthreads()`.
 
 See also: [tmap][@ref]
 """
-function tmap!(f, dst, src...; basesize=10_000, nt=Threads.nthreads())
+function tmap!(f, dst, src; basesize=10_000)
     ## if source is not large enough compared to basesize
     ## fall back to serial map!
-    length(dst) < basesize && return map!(f, dst, src...)
+    @assert length(dst) == length(src)
+    len < basesize && return map!(f, dst, src)
 
-    sem = Base.Semaphore(nt)
-
-    map!(dst, src...) do (x...)
-        @async begin
-            Base.acquire(sem)
-            __t = Threads.@spawn f(x...)
-            res = fetch(__t)
-            Base.release(sem)
-            return res
-        end |> fetch
+    Threads.@threads for idx in eachindex(src)
+        dst[idx] = f(src[idx])
     end
 end ## mostly untested so far; not safe
