@@ -28,7 +28,7 @@ function emptybins!(bdict::BinDict)
     return bdict
 end
 
-function CompressedAdjacencyList(pos::AbstractArray{StaticVector{N}},
+function CompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
                                  bdict,
                                  base=getboundbox(pos);
                                  sort=false, skipcheck=false)
@@ -59,7 +59,7 @@ function neighborcache(bdict::UnguardedBinDict, sort=false)
     end
 
     if sort # sort inplace --- is there a better way to do this?
-        map!(sort!, cache, cache)
+        sort!.(cache)
     end
 
     return cache
@@ -79,7 +79,7 @@ function neighborcache(bdict::GuardedBinDict, sort=false)
     end
 
     if sort # sort inplace --- is there a better way to do this?
-        map!(sort!, cache, cache)
+        sort!.(cache)
     end
     
     return cache
