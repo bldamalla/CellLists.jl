@@ -6,18 +6,19 @@
 function tCompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
                                   bdict,
                                   base=getboundbox(pos);
-                                  sort=false, skipcheck=false,
+                                  skipcheck=false,
                                   basesize=2000)
     ## get cache
     ## map and then reduce with vcat?
-    ncache = tneighborcache(bdict, sort; basesize=basesize)
-    szqn = bdict isa GuardedBinDict ? bdict.guard : size(base)
+    ncache = tneighborcache(bdict)
+    guarded = bdict isa GuardedBinDict
+    distf(a, b) = guarded ? peuclidean(a, b, bdict.guard) : euclidean(a, b)
     cutoff = bdict.cutoff
 
     tp = tmap(eachindex(pos); basesize=basesize) do idx
         cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
         filter(ncache[cell]) do q
-            peuclidean(pos[q], pos[idx], szqn) < cutoff
+            distf(pos[q], pos[idx]) < cutoff
         end
     end
 

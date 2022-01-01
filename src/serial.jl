@@ -31,17 +31,18 @@ end
 function CompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
                                  bdict,
                                  base=getboundbox(pos);
-                                 sort=false, skipcheck=false)
+                                 skipcheck=false)
     ## get cache
     ## map and then reduce with vcat
-    ncache = neighborcache(bdict, sort)
-    szqn = bdict isa GuardedBinDict ? bdict.guard : size(base)
+    ncache = neighborcache(bdict)
+    guarded = bdict isa GuardedBinDict
+    distf(a, b) = guarded ? peuclidean(a, b, bdict.guard) : euclidean(a, b)
     cutoff = bdict.cutoff
 
     tp = @inbounds map(eachindex(pos)) do idx
         cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
         filter(ncache[cell]) do q
-            peuclidean(pos[q], pos[idx], szqn) < cutoff
+            distf(pos[idx], pos[q]) < cutoff
         end
     end
 
