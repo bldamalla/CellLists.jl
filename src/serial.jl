@@ -36,7 +36,8 @@ function CompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
     ## map and then reduce with vcat
     ncache = neighborcache(bdict)
     guarded = bdict isa GuardedBinDict
-    distf(a, b) = guarded ? peuclidean(a, b, bdict.guard) : euclidean(a, b)
+    peuc(a, b) = guarded ? peuclidean(a, b, bdict.guard) : nothing
+    distf = guarded ? peuc : euclidean
     cutoff = bdict.cutoff
 
     tp = @inbounds map(eachindex(pos)) do idx
