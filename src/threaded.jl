@@ -3,7 +3,7 @@
 ## the only things to be threaded are cacheing the 
 ## neighbor lists and probably CAL construction
 
-function tCompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
+function tCompressedAdjacencyList(pos::Vector{<:StaticVector},
                                   bdict,
                                   base=getboundbox(pos);
                                   skipcheck=false,

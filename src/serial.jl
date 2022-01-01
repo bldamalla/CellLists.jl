@@ -28,7 +28,7 @@ function emptybins!(bdict::BinDict)
     return bdict
 end
 
-function CompressedAdjacencyList(pos::Vector{<:StaticVector{N}},
+function CompressedAdjacencyList(pos::Vector{<:StaticVector},
                                  bdict,
                                  base=getboundbox(pos);
                                  skipcheck=false)
