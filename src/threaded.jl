@@ -11,9 +11,9 @@ function tCompressedAdjacencyList(pos::Vector{<:StaticVector},
     ## get cache
     ## map and then reduce with vcat?
     ncache = tneighborcache(bdict)
-    guarded = bdict isa GuardedBinDict
-    peuc(a, b) = guarded ? peuclidean(a, b, bdict.guard) : nothing
-    distf = guarded ? peuc : euclidean
+    guard = bdict isa GuardedBinDict ? bdict.guard : nothing
+    peuc(a, b) = peuclidean(a, b, guard)    # never used when guard is nothing
+    distf = bdict isa GuardedBinDict ? peuc : euclidean
     cutoff = bdict.cutoff
 
     tp = tmap(eachindex(pos); basesize=basesize) do idx
