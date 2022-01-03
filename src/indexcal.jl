@@ -28,16 +28,17 @@ Base.firstindex(calv::CALview) = calv.start
 Base.lastindex(calv::CALview) = calv.stop
 Base.length(calv) = calv.stop - calv.start + 1
 
-function Base.iterate(calv::CALview, state=(calv.start,0))
+function Base.iterate(calv::CALview,
+                      state=(calv.start,viewsearch(calv.start,
+                                        calv.cal.csvalences,
+                                        calv.start, calv.stop)))
     st, a = state
     st > calv.stop && return nothing
     vals = calv.cal.csvalences
-    _sta, _sto = calv.start, calv.stop
 
-    a_ = a == 0 ? viewsearch(st, vals, _sta, _sto) : a
-    a__ = st == vals[a_] ? a_+1 : a_
+    a_ = st == vals[a] ? a+1 : a
 
-    return (a__, calv.cal.neighbors[st]), (st+1, a__)
+    return (a_, calv.cal.neighbors[st]), (st+1, a_)
 end
 
 function Base.getindex(cal::CompressedAdjacencyList, rng::UnitRange)
