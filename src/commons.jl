@@ -53,7 +53,7 @@ function tmap(f, src, shaped=false; basesize=10_000, nt=Threads.nthreads())
         fst = ulen * (tid-1) + first(idcs)
         lst = fst + ulen - 1
         if rem > 0
-            if tid < rem
+            if tid <= rem
                 fst += tid-1    # from dumping
                 lst += tid      # from dumping
             else
