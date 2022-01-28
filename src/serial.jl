@@ -43,7 +43,7 @@ function CompressedAdjacencyList(pos::Vector{<:StaticVector},
     tp = @inbounds map(eachindex(pos)) do idx
         cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
         filter(ncache[cell]) do q
-            distf(pos[idx], pos[q]) < cutoff
+            distf(pos[idx], pos[q]) < cutoff && idx != q
         end
     end
 

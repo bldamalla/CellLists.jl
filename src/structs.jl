@@ -86,25 +86,27 @@ Represents an iterable adjacency list. Contains information on the number of
 neighbors of each element and their respective neighbors.
 """
 struct CompressedAdjacencyList
-    valences::Vector{Int}
+    csvalences::Vector{Int}
     neighbors::Vector{Int}
 
     function CompressedAdjacencyList(valences, neighbors)
         @assert sum(valences) == length(neighbors)
-        return new(valences, neighbors)
+        return new(cumsum(valences), neighbors)
     end
 end
+Base.firstindex(::CompressedAdjacencyList) = 1
+Base.lastindex(cal::CompressedAdjacencyList) = lastindex(cal.csvalences)
+Base.length(cal::CompressedAdjacencyList) = cal.csvalences[end]
 
 # state can act like the indices of a matrix, the first is a placeholder
 # for a total number of elements that have been passed
 # the second element is the index of
 # the current indexed element and the second is the nth neighbor
-function Base.iterate(cal::CompressedAdjacencyList, state=(0,1,1))
-    s, a, b = state
+function Base.iterate(cal::CompressedAdjacencyList, state=(0,1))
+    s, a = state
     s == length(cal.neighbors) && return nothing
 
-    a_ = b == cal.valences[a] ? a+1 : a
-    b_ = b == cal.valences[a] ? 1 : b+1
+    a_ = s == cal.csvalences[a] ? a+1 : a
 
-    return (a, cal.neighbors[s+1]), (s+1, a_, b_)
+    return (a, cal.neighbors[s+1]), (s+1, a_)
 end

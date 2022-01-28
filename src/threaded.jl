@@ -19,7 +19,7 @@ function tCompressedAdjacencyList(pos::Vector{<:StaticVector},
     tp = tmap(eachindex(pos); basesize=basesize) do idx
         cell = getbin(pos[idx], base, cutoff; skipcheck=skipcheck)
         filter(ncache[cell]) do q
-            distf(pos[q], pos[idx]) < cutoff
+            distf(pos[q], pos[idx]) < cutoff && idx != q
         end
     end
 

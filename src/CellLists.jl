@@ -8,5 +8,7 @@ include("commons.jl")
 include("serial.jl")
 
 include("threaded.jl")
+include("indexcal.jl")
+include("calinterface.jl")
 
 end # module
