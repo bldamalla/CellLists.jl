@@ -88,6 +88,6 @@ function neighboritr(cal, i::Int, sieve=:full)
     return (cal.neighbors[q] for q in start:stop if _filter(q, i))
 end
 
-@inline _getfilter(sieve) = ifelse(sieve == :<, < ifelse(sieve == :>, >, nothing))
+@inline _getfilter(sieve) = ifelse(sieve == :<, <, ifelse(sieve == :>, >, nothing))
 
 
